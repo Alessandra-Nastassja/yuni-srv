@@ -1,0 +1,50 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yuni-postgres
+    environment:
+      POSTGRES_DB: yuni_db
+      POSTGRES_USER: yuni_user
+      POSTGRES_PASSWORD: yuni_pass123
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yuni_user -d yuni_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - yuni-network
+
+  app:
+    build: .
+    container_name: yuni-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yuni_db
+      SPRING_DATASOURCE_USERNAME: yuni_user
+      SPRING_DATASOURCE_PASSWORD: yuni_pass123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yuni-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  yuni-network:
+    driver: bridge

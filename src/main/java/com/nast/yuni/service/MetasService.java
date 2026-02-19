@@ -1,21 +1,22 @@
 package com.nast.yuni.service;
 
 import com.nast.yuni.domain.Metas;
+import com.nast.yuni.repository.MetasRepository;
 import com.nast.yuni.request.MetasRequest;
 import com.nast.yuni.response.MetasResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class MetasService {
+
+    private final MetasRepository metasRepository;
+
     public MetasResponse listarMetas(){
-        List<Metas> metas = List.of(
-                new Metas("Independência", 1000000.00, null, 2030),
-                new Metas("Minha casa", 300000.00, null, 2028),
-                new Metas("Reforma da casa", 15000.00, null, 2025),
-                new Metas("Reserva de emergência", 35000.00, null, 2024));
+        List<Metas> metas = metasRepository.findAllByOrderByPrazoAsc();
 
         return MetasResponse.builder()
                 .metas(metas)
@@ -29,8 +30,12 @@ public class MetasService {
                 request.getValorAtual(),
                 request.getPrazo());
         
+        Metas metasSalva = metasRepository.save(metas);
+
         return MetasResponse.builder()
-                .metas(List.of(metas))
+                .metas(List.of(metasSalva))
                 .build();
     }
 }
+
+

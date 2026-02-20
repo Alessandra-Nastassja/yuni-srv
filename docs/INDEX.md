@@ -5,9 +5,27 @@ Bem-vindo à documentação do projeto YUNI! Aqui você encontrará guias comple
 ## 🚀 Começar Rápido
 
 - **[Quick Start](README.md)** - Inicie em 3 passos
+- **[Endpoints Refatorados](ENDPOINTS_REFATORADOS.md)** ✨ NOVO - API CRUD Completa
 - **[Guia de Testes](GUIA_TESTES.md)** - Teste os endpoints
 
 ## 📖 Documentação Completa
+
+### 📝 NOVO - Refatoração (Leia Primeiro!)
+- **[RESUMO_MUDANCAS.md](RESUMO_MUDANCAS.md)** - O que foi refatorado
+  - Comparativo antes/depois
+  - Novos endpoints
+  - Melhorias implementadas
+  
+- **[ENDPOINTS_REFATORADOS.md](ENDPOINTS_REFATORADOS.md)** - Documentação de Endpoints
+  - Todos os 10 endpoints documentados
+  - Exemplos de curl
+  - Estrutura de request/response
+  
+- **[GUIA_COMPLETO_REFATORACAO.md](GUIA_COMPLETO_REFATORACAO.md)** - Guia Aprofundado
+  - Arquitetura completa
+  - Stack tecnológico
+  - Modelo de dados
+  - Deploy
 
 ### Para Aprender o Projeto
 - **[PROJETO_COMPLETO.md](PROJETO_COMPLETO.md)** - Documentação abrangente

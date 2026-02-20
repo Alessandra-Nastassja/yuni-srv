@@ -3,27 +3,41 @@ package com.nast.yuni.controller;
 import com.nast.yuni.request.MetasRequest;
 import com.nast.yuni.response.MetasResponse;
 import com.nast.yuni.service.MetasService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/metas")
+@RequestMapping("/api/metas")
+@RequiredArgsConstructor
 public class MetasController {
 
-    @Autowired
-    private MetasService service;
+    private final MetasService service;
 
     @GetMapping
-    public MetasResponse metas(){
-        return service.listarMetas();
+    public ResponseEntity<MetasResponse> listarMetas(){
+        return ResponseEntity.ok(service.listarMetas());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MetasResponse> obterMetaPorId(@PathVariable Long id){
+        return ResponseEntity.ok(service.obterMetaPorId(id));
     }
 
     @PostMapping
-    public MetasResponse criarMeta(@RequestBody MetasRequest request){
-        return service.criarMeta(request);
+    public ResponseEntity<MetasResponse> criarMeta(@RequestBody MetasRequest request){
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.criarMeta(request));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MetasResponse> atualizarMeta(@PathVariable Long id, @RequestBody MetasRequest request){
+        return ResponseEntity.ok(service.atualizarMeta(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarMeta(@PathVariable Long id){
+        service.deletarMeta(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,12 +1,10 @@
-node_modules
-npm-debug.log
-.git
+cd /Users/alessandranastassja/Desktop/yuni/yuni-srv
+docker-compose -f docker/docker-compose.yml up --buildtarget/
+.git/
 .gitignore
-README.md
-.env
-.vscode
-.idea
+.idea/
+*.iml
 *.log
-target/
+node_modules/
 .DS_Store
 

@@ -266,11 +266,6 @@ public class AtivosCompletoService {
                 .corretora(request.getCorretora())
                 .categoriaRiscoRendaVariavel(request.getCategoriaRiscoRendaVariavel())
                 .dataCompra(request.getDataCompra())
-                .dividendosRecebidos(request.getDividendosRecebidos())
-                .irEstimadoAcoes(request.getIrEstimadoAcoes())
-                .dividendYield(request.getDividendYield())
-                .irEstimadoFii(request.getIrEstimadoFii())
-                .irEstimadoEtf(request.getIrEstimadoEtf())
                 .build();
 
         RendaVariavel saved = rendaVariavelRepository.save(rendaVariavel);
@@ -280,30 +275,10 @@ public class AtivosCompletoService {
     }
 
     private void validarCamposPorTipoRendaVariavel(RendaVariavelRequest request) {
-        switch (request.getTipoRendaVariavel()) {
-            case "acoes":
-                if (request.getDataCompra() == null) {
-                    throw new IllegalArgumentException("dataCompra é obrigatória para ações");
-                }
-                if (request.getIrEstimadoAcoes() == null ||
-                    (request.getIrEstimadoAcoes() != 15 && request.getIrEstimadoAcoes() != 20)) {
-                    throw new IllegalArgumentException("irEstimadoAcoes deve ser 15 ou 20");
-                }
-                break;
-            case "fii":
-                if (request.getDividendYield() == null) {
-                    throw new IllegalArgumentException("dividendYield é obrigatório para FII");
-                }
-                if (request.getIrEstimadoFii() == null) {
-                    throw new IllegalArgumentException("irEstimadoFii é obrigatório para FII");
-                }
-                break;
-            case "etf":
-                if (request.getIrEstimadoEtf() == null ||
-                    (request.getIrEstimadoEtf() != 15 && request.getIrEstimadoEtf() != 20)) {
-                    throw new IllegalArgumentException("irEstimadoEtf deve ser 15 ou 20");
-                }
-                break;
+        if ("acoes".equals(request.getTipoRendaVariavel())) {
+            if (request.getDataCompra() == null) {
+                throw new IllegalArgumentException("dataCompra é obrigatória para ações");
+            }
         }
     }
 }

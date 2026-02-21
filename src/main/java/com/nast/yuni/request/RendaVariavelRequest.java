@@ -32,16 +32,7 @@ public class RendaVariavelRequest {
     @NotBlank(message = "Categoria de risco é obrigatória")
     private String categoriaRiscoRendaVariavel; // baixo, medio, alto
 
-    // Campos específicos para Ações
+    // Campo específico para Ações
     private LocalDate dataCompra;
-    private Double dividendosRecebidos;
-    private Integer irEstimadoAcoes; // 15 ou 20
-
-    // Campos específicos para FII
-    private Double dividendYield;
-    private String irEstimadoFii; // percentual em texto
-
-    // Campos específicos para ETF
-    private Integer irEstimadoEtf; // 15 ou 20
 }
 

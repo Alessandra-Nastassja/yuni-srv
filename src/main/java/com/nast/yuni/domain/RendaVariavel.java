@@ -34,16 +34,7 @@ public class RendaVariavel {
     @Column(nullable = false)
     private String categoriaRiscoRendaVariavel;
 
-    // Campos específicos para Ações
+    // Campo específico para Ações
     private java.time.LocalDate dataCompra;
-    private Double dividendosRecebidos;
-    private Integer irEstimadoAcoes;
-
-    // Campos específicos para FII
-    private Double dividendYield;
-    private String irEstimadoFii;
-
-    // Campos específicos para ETF
-    private Integer irEstimadoEtf;
 }
 

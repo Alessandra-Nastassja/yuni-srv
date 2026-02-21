@@ -8,6 +8,7 @@ Documentação completa dos endpoints da API YUNI.
 
 - [Ativos Simples](#ativos-simples)
 - [Ativos Completos](#ativos-completos)
+- [Não-Ativos](#não-ativos)
 - [Metas](#metas)
 
 ---
@@ -31,13 +32,19 @@ curl -X GET http://localhost:8080/api/ativos \
       "id": 1,
       "nome": "Conta Corrente",
       "tipo": "conta_corrente",
-      "valorAtual": 5000.00
+      "valorAtual": 5000.00,
+      "tipoInvestimento": null,
+      "risco": null,
+      "dataCriacao": "2026-02-21T10:30:00.123456"
     },
     {
       "id": 2,
       "nome": "Reserva de Emergência",
       "tipo": "reserva_emergencia",
-      "valorAtual": 15000.00
+      "valorAtual": 15000.00,
+      "tipoInvestimento": null,
+      "risco": null,
+      "dataCriacao": "2026-02-21T10:30:00.123456"
     }
   ]
 }
@@ -58,7 +65,10 @@ curl -X GET http://localhost:8080/api/ativos/1 \
       "id": 1,
       "nome": "Conta Corrente",
       "tipo": "conta_corrente",
-      "valorAtual": 5000.00
+      "valorAtual": 5000.00,
+      "tipoInvestimento": null,
+      "risco": null,
+      "dataCriacao": "2026-02-21T10:30:00.123456"
     }
   ]
 }
@@ -311,9 +321,7 @@ curl -X POST http://localhost:8080/api/ativos/completo \
       "valorAtual": 3800.00,
       "corretora": "Clear",
       "categoriaRiscoRendaVariavel": "alto",
-      "dataCompra": "2025-01-10",
-      "dividendosRecebidos": 200.00,
-      "irEstimadoAcoes": 15
+      "dataCompra": "2025-01-10"
     }
   }'
 ```
@@ -333,9 +341,7 @@ curl -X POST http://localhost:8080/api/ativos/completo \
       "precoMedio": 160.00,
       "valorAtual": 8500.00,
       "corretora": "Rico",
-      "categoriaRiscoRendaVariavel": "medio",
-      "dividendYield": 8.5,
-      "irEstimadoFii": "Isento em dividendos, 20% em ganho de capital"
+      "categoriaRiscoRendaVariavel": "medio"
     }
   }'
 ```
@@ -355,16 +361,15 @@ curl -X POST http://localhost:8080/api/ativos/completo \
       "precoMedio": 280.00,
       "valorAtual": 8700.00,
       "corretora": "XP",
-      "categoriaRiscoRendaVariavel": "medio",
-      "irEstimadoEtf": 15
+      "categoriaRiscoRendaVariavel": "medio"
     }
   }'
 ```
 
 **Tipos de Renda Variável:**
-- `acoes` - Ações (IR: 15% ou 20%)
-- `fii` - Fundos Imobiliários (IR: isento em dividendos)
-- `etf` - Exchange Traded Funds (IR: 15% ou 20%)
+- `acoes` - Ações (apenas dataCompra obrigatória)
+- `fii` - Fundos Imobiliários
+- `etf` - Exchange Traded Funds
 
 ### Criar Ativo Não-Investimento com tipoFonteRenda
 
@@ -381,9 +386,144 @@ curl -X POST http://localhost:8080/api/ativos/completo \
 
 ---
 
-## Metas
+## Não-Ativos
 
-API para gestão de metas financeiras.
+API para gestão de não-ativos (bens com depreciação como veículos, imóveis, etc.).
+
+### Listar Todos os Não-Ativos
+
+```bash
+curl -X GET http://localhost:8080/api/nao-ativos \
+  -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+  "naoAtivos": [
+    {
+      "id": 1,
+      "nome": "Carro",
+      "tipo": "veiculos",
+      "valorAtual": 45000.00,
+      "dataCompra": "2026-02-21T11:25:00.123456"
+    },
+    {
+      "id": 2,
+      "nome": null,
+      "tipo": "fgts",
+      "valorAtual": 15000.00,
+      "dataCompra": "2026-02-21T11:24:00.123456"
+    }
+  ]
+}
+```
+
+### Obter Não-Ativo por ID
+
+```bash
+curl -X GET http://localhost:8080/api/nao-ativos/1 \
+  -H "Content-Type: application/json"
+```
+
+**Response:**
+```json
+{
+  "naoAtivos": [
+    {
+      "id": 1,
+      "nome": "Carro",
+      "tipo": "veiculos",
+      "valorAtual": 45000.00,
+      "dataCompra": "2026-02-21T11:25:00.123456"
+    }
+  ]
+}
+```
+
+### Criar Não-Ativo (Veículo)
+
+```bash
+curl -X POST http://localhost:8080/api/nao-ativos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Carro",
+    "tipo": "veiculos",
+    "valorAtual": 45000.00
+  }'
+```
+
+**Tipos válidos:**
+- `veiculos` - Veículos (nome obrigatório)
+- `imoveis` - Imóveis (nome obrigatório)
+- `emprestimos` - Empréstimos (nome obrigatório)
+- `financiamentos` - Financiamentos (nome obrigatório)
+- `fgts` - FGTS (nome **NÃO obrigatório**)
+- `outros` - Outros (nome obrigatório)
+
+**Response:**
+```json
+{
+  "naoAtivos": [
+    {
+      "id": 1,
+      "nome": "Carro",
+      "tipo": "veiculos",
+      "valorAtual": 45000.00,
+      "dataCompra": "2026-02-21T11:25:00.123456"
+    }
+  ]
+}
+```
+
+### Criar Não-Ativo (FGTS - sem nome)
+
+```bash
+curl -X POST http://localhost:8080/api/nao-ativos \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo": "fgts",
+    "valorAtual": 15000.00
+  }'
+```
+
+**Response:**
+```json
+{
+  "naoAtivos": [
+    {
+      "id": 2,
+      "nome": null,
+      "tipo": "fgts",
+      "valorAtual": 15000.00,
+      "dataCompra": "2026-02-21T11:24:00.123456"
+    }
+  ]
+}
+```
+
+### Atualizar Não-Ativo
+
+```bash
+curl -X PUT http://localhost:8080/api/nao-ativos/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Carro (Atualizado)",
+    "tipo": "veiculos",
+    "valorAtual": 42000.00
+  }'
+```
+
+### Deletar Não-Ativo
+
+```bash
+curl -X DELETE http://localhost:8080/api/nao-ativos/1 \
+  -H "Content-Type: application/json"
+```
+
+**Response:** `204 No Content`
+
+## Metas
 
 ### Listar Todas as Metas
 
@@ -397,16 +537,34 @@ curl -X GET http://localhost:8080/api/metas \
 {
   "metas": [
     {
+      "id": 3,
+      "nome": "Viagem",
+      "valorMeta": 10000.00,
+      "valorAtual": 2000.00,
+      "prazo": 12,
+      "percentualAlcance": 20.0
+    },
+    {
+      "id": 2,
+      "nome": "Carro",
+      "valorMeta": 50000.00,
+      "valorAtual": 30000.00,
+      "prazo": 24,
+      "percentualAlcance": 60.0
+    },
+    {
       "id": 1,
-      "descricao": "Comprar apartamento",
-      "valorObjetivo": 500000.00,
-      "valorAtual": 150000.00,
-      "prazo": "2028-12-31",
-      "percentualProgresso": 30.0
+      "nome": "Casa",
+      "valorMeta": 100000.00,
+      "valorAtual": 90000.00,
+      "prazo": 36,
+      "percentualAlcance": 90.0
     }
   ]
 }
 ```
+
+**Nota:** Ordenadas do menor para o maior percentual de alcance (valorAtual / valorMeta * 100)
 
 ### Obter Meta por ID
 
@@ -421,10 +579,10 @@ curl -X GET http://localhost:8080/api/metas/1 \
 curl -X POST http://localhost:8080/api/metas \
   -H "Content-Type: application/json" \
   -d '{
-    "descricao": "Comprar apartamento",
-    "valorObjetivo": 500000.00,
+    "nome": "Comprar apartamento",
+    "valorMeta": 500000.00,
     "valorAtual": 150000.00,
-    "prazo": "2028-12-31"
+    "prazo": 60
   }'
 ```
 
@@ -434,11 +592,11 @@ curl -X POST http://localhost:8080/api/metas \
   "metas": [
     {
       "id": 1,
-      "descricao": "Comprar apartamento",
-      "valorObjetivo": 500000.00,
+      "nome": "Comprar apartamento",
+      "valorMeta": 500000.00,
       "valorAtual": 150000.00,
-      "prazo": "2028-12-31",
-      "percentualProgresso": 30.0
+      "prazo": 60,
+      "percentualAlcance": 30.0
     }
   ]
 }
@@ -450,10 +608,10 @@ curl -X POST http://localhost:8080/api/metas \
 curl -X PUT http://localhost:8080/api/metas/1 \
   -H "Content-Type: application/json" \
   -d '{
-    "descricao": "Comprar apartamento atualizado",
-    "valorObjetivo": 550000.00,
+    "nome": "Comprar apartamento atualizado",
+    "valorMeta": 550000.00,
     "valorAtual": 200000.00,
-    "prazo": "2029-12-31"
+    "prazo": 60
   }'
 ```
 
@@ -483,8 +641,9 @@ curl -X DELETE http://localhost:8080/api/metas/1 \
 
 ### Ativos Simples
 - `nome`: Obrigatório, máximo 30 caracteres
-- `tipo`: Obrigatório, valores válidos listados acima
-- `valorAtual`: Obrigatório (exceto para tipo `investimentos`)
+- `tipo`: Obrigatório, valores válidos: `conta_corrente`, `meu_negocio`, `investimentos`, `contas_a_receber`, `reserva_emergencia`, `previdencia_privada`, `outros`
+- `valorAtual`: Obrigatório
+- `dataCriacao`: Gerado automaticamente (não enviar no request)
 
 ### Ativos Completos
 - Todas as validações de Ativos Simples +
@@ -492,17 +651,23 @@ curl -X DELETE http://localhost:8080/api/metas/1 \
 - `tipoInvestimento`: Obrigatório quando `tipo = investimentos`
 - Validações específicas para cada tipo de investimento
 
+### Não-Ativos
+- `nome`: Obrigatório para todos os tipos **exceto** `fgts`
+- `tipo`: Obrigatório, valores válidos: `veiculos`, `imoveis`, `emprestimos`, `financiamentos`, `fgts`, `outros`
+- `valorAtual`: Obrigatório
+- `dataCompra`: Gerado automaticamente (não enviar no request)
+
 ### Metas
-- `descricao`: Obrigatório
-- `valorObjetivo`: Obrigatório, maior que zero
+- `nome`: Obrigatório
+- `valorMeta`: Obrigatório, maior que zero
 - `valorAtual`: Obrigatório, maior ou igual a zero
-- `prazo`: Obrigatório, formato: YYYY-MM-DD
+- `prazo`: Obrigatório (em meses)
 
 ## 📝 Notas
 
 1. Todos os valores monetários usam 2 casas decimais
-2. Datas no formato ISO: `YYYY-MM-DD`
-3. Timestamps no formato ISO: `YYYY-MM-DDTHH:mm:ss`
+2. **Datas** (`dataCompra`, `dataCriacao`) no formato ISO com timestamp: `YYYY-MM-DDTHH:mm:ss.ssssss`
+3. **Percentual de Alcance** (Metas) = (valorAtual / valorMeta) × 100
 4. CORS habilitado para todas as origens (desenvolvimento)
 
 ---

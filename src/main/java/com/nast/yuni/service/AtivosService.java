@@ -20,7 +20,9 @@ public class AtivosService {
         List<Ativos> ativos = repository.findAllByOrderByValorAtualDesc();
 
         return AtivosResponse.builder()
-                .ativos(ativos)
+                .ativos(ativos.stream()
+                        .map(com.nast.yuni.response.AtivoResumoResponse::fromAtivo)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -29,7 +31,7 @@ public class AtivosService {
                 .orElseThrow(() -> new IllegalArgumentException("Ativo não encontrado com ID: " + id));
 
         return AtivosResponse.builder()
-                .ativos(List.of(ativo))
+                .ativos(List.of(com.nast.yuni.response.AtivoResumoResponse.fromAtivo(ativo)))
                 .build();
     }
 
@@ -43,7 +45,7 @@ public class AtivosService {
         Ativos ativoSalvo = repository.save(ativo);
 
         return AtivosResponse.builder()
-                .ativos(List.of(ativoSalvo))
+                .ativos(List.of(com.nast.yuni.response.AtivoResumoResponse.fromAtivo(ativoSalvo)))
                 .build();
     }
 
@@ -60,7 +62,9 @@ public class AtivosService {
         List<Ativos> ativosSalvos = repository.saveAll(ativos);
 
         return AtivosResponse.builder()
-                .ativos(ativosSalvos)
+                .ativos(ativosSalvos.stream()
+                        .map(com.nast.yuni.response.AtivoResumoResponse::fromAtivo)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -78,7 +82,7 @@ public class AtivosService {
         Ativos ativoAtualizado = repository.save(ativoExistente);
 
         return AtivosResponse.builder()
-                .ativos(List.of(ativoAtualizado))
+                .ativos(List.of(com.nast.yuni.response.AtivoResumoResponse.fromAtivo(ativoAtualizado)))
                 .build();
     }
 

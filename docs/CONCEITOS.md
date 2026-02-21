@@ -1,743 +1,351 @@
-# 📚 Guia Completo do Projeto Yuni - Conceitos e Arquitetura
+# Conceitos de Java e Spring Boot
 
-## 📖 Índice
-1. [Visão Geral](#visão-geral)
-2. [Arquitetura do Projeto](#arquitetura-do-projeto)
-3. [Conceitos Fundamentais](#conceitos-fundamentais)
-4. [Stack Tecnológico](#stack-tecnológico)
-5. [Estrutura de Pastas](#estrutura-de-pastas)
-6. [Como Funciona](#como-funciona)
-7. [Fluxo de Dados](#fluxo-de-dados)
-8. [Banco de Dados](#banco-de-dados)
-9. [Docker e Containerização](#docker-e-containerização)
-10. [Glossário](#glossário)
-11. [Documentos Relacionados](#documentos-relacionados)
+Este documento explica os principais conceitos utilizados no projeto YUNI.
 
----
+## 📚 Anotações Spring
 
-## 🎯 Visão Geral
+### Controller Layer
 
-**Yuni** é uma aplicação de **gestão de metas financeiras** desenvolvida em Java com Spring Boot. Permite que os usuários:
-
-- ✅ Criar e salvar metas financeiras (independência, casa, reforma, etc.)
-- ✅ Acompanhar o progresso de cada meta
-- ✅ Visualizar o patrimônio e sua evolução
-- ✅ Armazenar dados persistentemente em PostgreSQL
-- ✅ Acessar dados via API REST
-
-**Objetivo:** Ajudar pessoas a organizar e acompanhar seus objetivos financeiros.
-
----
-
-## 🏗️ Arquitetura do Projeto
-
-O projeto segue o padrão **MVC (Model-View-Controller)** com camadas bem definidas:
-
-```
-┌─────────────────────────────────────────────┐
-│          CLIENTE (Frontend/Postman)         │
-├─────────────────────────────────────────────┤
-│         CONTROLLER (MetasController)        │ ← Recebe requisições HTTP
-├─────────────────────────────────────────────┤
-│          SERVICE (MetasService)             │ ← Lógica de negócio
-├─────────────────────────────────────────────┤
-│        REPOSITORY (MetasRepository)         │ ← Acesso ao banco
-├─────────────────────────────────────────────┤
-│  DATABASE (PostgreSQL - Tabela 'metas')     │ ← Armazena dados
-└─────────────────────────────────────────────┘
-```
-
-### Camadas Explicadas:
-
-**1. Controller**
-- Recebe requisições HTTP (GET, POST, PUT, DELETE)
-- Valida dados de entrada
-- Chama métodos do Service
-- Retorna respostas HTTP (JSON)
-
-**2. Service**
-- Contém toda a lógica de negócio
-- Realiza transformações de dados
-- Coordena operações entre repositories
-- Processa regras de negócio
-
-**3. Repository**
-- Faz a ponte entre a aplicação e o banco de dados
-- Executa queries SQL
-- Realiza operações CRUD (Create, Read, Update, Delete)
-
-**4. Domain (Entidades)**
-- Representa os dados que serão armazenados
-- Mapeia tabelas do banco de dados
-
----
-
-## 💡 Conceitos Fundamentais
-
-### 1. **Entidades JPA**
-
-Uma entidade é uma classe Java que representa uma tabela no banco de dados.
-
-```java
-@Entity  // Marca como entidade JPA
-@Table(name = "metas")  // Nome da tabela no banco
-public class Metas {
-    @Id  // Chave primária
-    @GeneratedValue(strategy = GenerationType.IDENTITY)  // Auto-incremento
-    private Long id;
-    
-    @Column(nullable = false)  // Campo obrigatório
-    private String nome;
-}
-```
-
-**O que significa:**
-- `@Entity`: Diz ao Spring que essa classe é uma entidade de banco de dados
-- `@Table`: Define o nome da tabela
-- `@Id`: Define qual campo é a chave primária (identificador único)
-- `@GeneratedValue`: Auto-incrementa o ID
-- `@Column`: Define propriedades da coluna (obrigatória, tipo, tamanho, etc.)
-
-### 2. **Repository Pattern (Padrão Repositório)**
-
-O Repository é a camada de abstração que acessa o banco de dados.
-
-```java
-@Repository
-public interface MetasRepository extends JpaRepository<Metas, Long> {
-    List<Metas> findAllByOrderByPrazoAsc();
-}
-```
-
-**Por que usar Repository?**
-- ✅ Separa lógica de acesso a dados da lógica de negócio
-- ✅ Facilita testes (pode mockar o repository)
-- ✅ Centraliza queries em um único lugar
-- ✅ Torna fácil trocar de banco de dados
-
-**O que `JpaRepository<Metas, Long>` significa:**
-- `Metas`: A entidade que será gerenciada
-- `Long`: O tipo da chave primária
-
-### 3. **Interface (Contrato de Implementação)**
-
-Uma interface define **o que** uma classe deve fazer, sem definir **como** fazer.
-
-**Exemplo no Yuni:**
-
-```java
-// Interface - define o contrato
-@Repository
-public interface MetasRepository extends JpaRepository<Metas, Long> {
-    List<Metas> findAllByOrderByPrazoAsc();
-    Optional<Metas> findByNome(String nome);
-}
-
-// Spring Data JPA cria a implementação automaticamente em tempo de execução
-// Você não precisa criar uma classe MetasRepositoryImpl
-```
-
-**Por que usar Interface?**
-- ✅ **Flexibilidade**: Trocar implementações facilmente
-- ✅ **Testabilidade**: Criar mocks para testes
-- ✅ **Baixo acoplamento**: Service não conhece detalhes de implementação
-- ✅ **Múltiplas implementações**: Pode ter várias formas de fazer a mesma coisa
-
-**Exemplo com múltiplas implementações:**
-
-```java
-// Interface
-public interface NotificacaoService {
-    void enviar(String mensagem);
-}
-
-// Implementação 1: Email
-@Service
-@Primary
-public class EmailNotificacaoService implements NotificacaoService {
-    public void enviar(String mensagem) {
-        System.out.println("📧 Email enviado: " + mensagem);
-    }
-}
-
-// Implementação 2: SMS
-@Service
-public class SmsNotificacaoService implements NotificacaoService {
-    public void enviar(String mensagem) {
-        System.out.println("📱 SMS enviado: " + mensagem);
-    }
-}
-
-// Uso no Service - depende da interface, não da implementação
-@Service
-@RequiredArgsConstructor
-public class MetasService {
-    private final NotificacaoService notificacao;  // Spring injeta EmailNotificacaoService (@Primary)
-    
-    public void criarMeta(MetasRequest request) {
-        // Não sabe se é Email ou SMS, apenas chama o método
-        notificacao.enviar("Meta criada: " + request.getNome());
-    }
-}
-```
-
-**📚 Para mais detalhes:** Veja [INTERFACE_E_INJECAO.md](./INTERFACE_E_INJECAO.md)
-
----
-
-### 4. **Dependency Injection (Injeção de Dependência)**
-
-A injeção de dependência permite que o Spring "injete" automaticamente as dependências de uma classe, ao invés de você criar manualmente.
-
-**Exemplo no Yuni:**
-
-```java
-@Service
-@RequiredArgsConstructor  // Lombok cria construtor com as dependências
-public class MetasService {
-    // Dependências injetadas automaticamente pelo Spring
-    private final MetasRepository metasRepository;
-}
-```
-
-**Como funciona:**
-1. Spring detecta que `MetasService` precisa de `MetasRepository`
-2. Spring cria uma instância de `MetasRepository` (implementação JPA)
-3. Spring passa essa instância para o construtor do `MetasService`
-4. Você pode usar `metasRepository` sem criar manualmente
-
-**Fluxo completo no Yuni:**
-
-```java
-// 1. Repository (Interface)
-@Repository
-public interface MetasRepository extends JpaRepository<Metas, Long> {
-    List<Metas> findAllByOrderByPrazoAsc();
-}
-
-// 2. Service (recebe Repository injetado)
-@Service
-@RequiredArgsConstructor
-public class MetasService {
-    private final MetasRepository metasRepository;  // Injetado pelo Spring
-
-    public MetasResponse listarMetas() {
-        List<Metas> metas = metasRepository.findAllByOrderByPrazoAsc();
-        return MetasResponse.builder().metas(metas).build();
-    }
-}
-
-// 3. Controller (recebe Service injetado)
-@RestController
-@RequestMapping("/metas")
-@RequiredArgsConstructor
-public class MetasController {
-    private final MetasService service;  // Injetado pelo Spring
-
-    @GetMapping
-    public MetasResponse metas() {
-        return service.listarMetas();
-    }
-}
-```
-
-**Vantagens:**
-- ✅ Código mais limpo e organizado
-- ✅ Facilita testes (pode mockar dependências)
-- ✅ Menos acoplamento entre classes
-- ✅ Spring gerencia o ciclo de vida dos objetos
-
-**📚 Para mais detalhes:** Veja [INTERFACE_E_INJECAO.md](./INTERFACE_E_INJECAO.md)
-
----
-
-### 5. **RESTful API**
-
-REST = Representational State Transfer. Uma forma padrão de criar APIs web.
-
-**Princípios REST:**
-- Usa URLs para representar recursos
-- Usa verbos HTTP para ações (GET, POST, PUT, DELETE)
-- Usa JSON para trocar dados
+#### `@RestController`
+Combina `@Controller` + `@ResponseBody`. Indica que a classe é um controller REST e todas as respostas são automaticamente serializadas para JSON.
 
 ```java
 @RestController
-@RequestMapping("/metas")
-public class MetasController {
-    
-    @GetMapping  // GET /metas
-    public MetasResponse metas() { ... }
-    
-    @PostMapping  // POST /metas
-    public MetasResponse criarMeta(@RequestBody MetasRequest request) { ... }
+@RequestMapping("/api/ativos")
+public class AtivosController {
+    // métodos retornam objetos convertidos para JSON
 }
 ```
 
-**Mapeamento REST:**
-- `GET /metas` → Listar todas as metas
-- `POST /metas` → Criar nova meta
-- `GET /metas/{id}` → Obter meta específica
-- `PUT /metas/{id}` → Atualizar meta
-- `DELETE /metas/{id}` → Deletar meta
-
-### 6. **ORM (Object-Relational Mapping)**
-
-ORM mapeia objetos Java para tabelas SQL automaticamente.
+#### `@RequestMapping`
+Define o path base para todos os endpoints do controller.
 
 ```java
-// Java
-Metas meta = new Metas("Casa", 300000.0, null, 2028);
-metasRepository.save(meta);
-
-// SQL (gerado automaticamente)
-INSERT INTO metas (nome, valor_meta, valor_atual, prazo)
-VALUES ('Casa', 300000.0, NULL, 2028);
+@RequestMapping("/api/metas")  // Todos os métodos terão /api/metas como prefixo
 ```
 
-**Vantagens do ORM:**
-- ✅ Escrever menos SQL
-- ✅ Código mais seguro (proteção contra SQL Injection)
-- ✅ Trocar de banco de dados facilmente
+#### `@GetMapping`, `@PostMapping`, `@PutMapping`, `@DeleteMapping`
+Mapeiam métodos HTTP específicos.
 
----
-
-## 🛠️ Stack Tecnológico
-
-### Backend
-- **Java 21**: Linguagem de programação
-- **Spring Boot 4.0.2**: Framework web
-- **Spring Data JPA**: Abstração de acesso a dados
-- **Hibernate**: Implementação de JPA (ORM)
-- **Lombok**: Reduz boilerplate de código
-
-### Banco de Dados
-- **PostgreSQL 16**: Banco de dados relacional
-
-### DevOps
-- **Docker**: Containerização
-- **Docker Compose**: Orquestração de containers
-
-### Build e Gerenciamento
-- **Maven**: Gerenciador de dependências e build
-- **Spring Boot Maven Plugin**: Plugin para build de aplicações Spring Boot
-
----
-
-## 📂 Estrutura de Pastas
-
-```
-yuni-srv/
-├── src/
-│   ├── main/
-│   │   ├── java/com/nast/yuni/
-│   │   │   ├── YuniApplication.java              # Classe principal (entry point)
-│   │   │   ├── controller/
-│   │   │   │   ├── MetasController.java          # Recebe requisições de metas
-│   │   │   │   └── PatrimonioController.java     # Recebe requisições de patrimônio
-│   │   │   ├── service/
-│   │   │   │   ├── MetasService.java             # Lógica de metas
-│   │   │   │   └── PatrimonioService.java        # Lógica de patrimônio
-│   │   │   ├── repository/
-│   │   │   │   └── MetasRepository.java          # Acesso a dados de metas
-│   │   │   ├── domain/
-│   │   │   │   ├── Metas.java                    # Entidade Metas
-│   │   │   │   ├── PatrimonioAtivos.java         # Entidade Patrimônio Ativos
-│   │   │   │   └── ... (outras entidades)
-│   │   │   ├── request/
-│   │   │   │   └── MetasRequest.java             # DTO para receber dados
-│   │   │   ├── response/
-│   │   │   │   └── MetasResponse.java            # DTO para enviar dados
-│   │   │   └── configuration/
-│   │   │       └── CorsConfig.java               # Configuração CORS
-│   │   └── resources/
-│   │       └── application.properties            # Configurações (banco, porta, etc)
-│   └── test/
-│       └── java/com/nast/yuni/                   # Testes unitários
-├── docker/
-├── Dockerfile                                    # Imagem Docker
-├── docker-compose.yml                            # Orquestração
-├── pom.xml                                       # Dependências Maven
-└── docs/
-    ├── API_TESTING.md                            # Como testar API
-    ├── DOCKER_SETUP.md                           # Setup Docker
-    ├── README_DOCKER.md                          # README do Docker
-    └── CONCEITOS.md                              # Este arquivo
+```java
+@GetMapping           // GET /api/ativos
+@GetMapping("/{id}")  // GET /api/ativos/123
+@PostMapping          // POST /api/ativos
+@PutMapping("/{id}")  // PUT /api/ativos/123
+@DeleteMapping("/{id}") // DELETE /api/ativos/123
 ```
 
-### Explicação das pastas:
+#### `@PathVariable`
+Extrai variáveis do path da URL.
 
-**domain/** - Entidades (modelos de dados)
-- Representam tabelas do banco de dados
-- Contêm validações básicas
-
-**repository/** - Acesso a dados
-- Interfaces que extendem JpaRepository
-- Métodos customizados para queries
-
-**service/** - Lógica de negócio
-- Regras de negócio
-- Transformações de dados
-- Orquestração entre repositories
-
-**controller/** - API REST
-- Endpoints HTTP
-- Validação de entrada
-- Formatação de resposta
-
-**request/** - DTOs de entrada
-- Classes que recebem dados do cliente
-- Validações de entrada
-
-**response/** - DTOs de saída
-- Classes que enviam dados para o cliente
-- Formatação de resposta
-
-**configuration/** - Configurações
-- CORS, segurança, etc.
-
----
-
-## 🔄 Como Funciona
-
-### Exemplo Prático: Criar uma Meta
-
-**1. Cliente faz requisição HTTP**
-```bash
-curl -X POST http://localhost:8080/metas \
-  -H "Content-Type: application/json" \
-  -d '{"nome": "Casa", "valorMeta": 300000, "valorAtual": null, "prazo": 2028}'
+```java
+@GetMapping("/{id}")
+public ResponseEntity<AtivosResponse> obterAtivoPorId(@PathVariable Long id) {
+    // id vem da URL: /api/ativos/123 -> id = 123
+}
 ```
 
-**2. Controller recebe a requisição**
+#### `@RequestBody`
+Converte o JSON do body da requisição para um objeto Java.
+
 ```java
 @PostMapping
-public MetasResponse criarMeta(@RequestBody MetasRequest request) {
-    return service.criarMeta(request);
+public ResponseEntity<AtivosResponse> criarAtivo(@RequestBody AtivosRequest request) {
+    // request é criado automaticamente a partir do JSON
 }
 ```
-- Recebe o JSON
-- Converte para objeto `MetasRequest`
-- Chama o service
 
-**3. Service processa**
+#### `@Valid`
+Ativa validações automáticas baseadas em anotações do Bean Validation.
+
 ```java
-public MetasResponse criarMeta(MetasRequest request) {
-    Metas metas = new Metas(
-        request.getNome(),
-        request.getValorMeta(),
-        request.getValorAtual(),
-        request.getPrazo()
-    );
-    
-    Metas metasSalva = metasRepository.save(metas);  // Salva no banco
-    
-    return MetasResponse.builder()
-        .metas(List.of(metasSalva))
-        .build();
+@PostMapping
+public ResponseEntity<AtivoCompletoResponse> criarAtivo(
+    @Valid @RequestBody AtivosCompletoRequest request) {
+    // Se validação falhar, retorna 400 Bad Request automaticamente
 }
 ```
-- Cria instância de `Metas`
-- Chama repository para salvar
-- Retorna resposta formatada
 
-**4. Repository salva no banco**
+### Service Layer
+
+#### `@Service`
+Marca a classe como um componente de serviço (lógica de negócio). Permite que seja injetada via `@Autowired` ou construtor.
+
 ```java
-metasRepository.save(metas);
-// Gera SQL automaticamente:
-// INSERT INTO metas (nome, valor_meta, valor_atual, prazo) VALUES (...)
+@Service
+public class AtivosService {
+    // lógica de negócio aqui
+}
 ```
 
-**5. Cliente recebe resposta**
-```json
-{
-  "metas": [
-    {
-      "id": 1,
-      "nome": "Casa",
-      "valorMeta": 300000.0,
-      "valorAtual": null,
-      "prazo": 2028
+#### `@Transactional`
+Gerencia transações de banco de dados automaticamente. Se ocorrer exceção, faz rollback.
+
+```java
+@Service
+@Transactional  // Todas as operações são transacionais
+public class AtivosCompletoService {
+    public AtivosCompleto criarAtivo(AtivosCompletoRequest request) {
+        // Se falhar aqui, faz rollback automático
     }
-  ]
 }
 ```
 
----
+### Repository Layer
 
-## 📊 Fluxo de Dados
+#### `@Repository` (implícito em interfaces JPA)
+Marca a interface como um repositório. Com Spring Data JPA, não precisa implementação.
 
-```
-┌──────────────────┐
-│ Request JSON     │
-│ (do cliente)     │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ MetasController      │
-│ (recebe e valida)    │
-└────────┬─────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ MetasRequest         │
-│ (DTO de entrada)     │
-└────────┬─────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ MetasService         │
-│ (lógica de negócio)  │
-└────────┬─────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ Metas (Domain)       │
-│ (entidade JPA)       │
-└────────┬─────────────┘
-         │
-         ▼
-┌──────────────────────────┐
-│ MetasRepository          │
-│ (acesso a dados)         │
-└────────┬─────────────────┘
-         │
-         ▼
-┌──────────────────────────┐
-│ PostgreSQL               │
-│ (persiste os dados)      │
-└────────┬─────────────────┘
-         │
-         ▼ (query response)
-┌──────────────────────────┐
-│ MetasRepository (retorna)│
-└────────┬─────────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ MetasService         │
-│ (transforma em DTO)  │
-└────────┬─────────────┘
-         │
-         ▼
-┌──────────────────────────┐
-│ MetasResponse            │
-│ (DTO de saída)           │
-└────────┬─────────────────┘
-         │
-         ▼
-┌──────────────────────────┐
-│ MetasController          │
-│ (converte para JSON)     │
-└────────┬─────────────────┘
-         │
-         ▼
-┌──────────────────────┐
-│ Response JSON        │
-│ (retorna ao cliente) │
-└──────────────────────┘
+```java
+public interface AtivosRepository extends JpaRepository<Ativos, Long> {
+    // Spring gera implementação automaticamente
+    List<Ativos> findAllByOrderByValorAtualDesc();
+}
 ```
 
----
+### Domain Layer (Entidades)
 
-## 🗄️ Banco de Dados
+#### `@Entity`
+Marca a classe como uma entidade JPA (tabela no banco).
 
-### Tabela: metas
-
-```sql
-CREATE TABLE metas (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    nome VARCHAR(255) NOT NULL,
-    valor_meta DOUBLE NOT NULL,
-    valor_atual DOUBLE,
-    prazo INTEGER NOT NULL
-);
+```java
+@Entity
+@Table(name = "ativos")
+public class Ativos {
+    // campos = colunas da tabela
+}
 ```
 
-**Campos:**
-- `id`: Identificador único, auto-incrementado
-- `nome`: Nome da meta (ex: "Casa", "Carro")
-- `valor_meta`: Quanto quer economizar
-- `valor_atual`: Quanto já economizou
-- `prazo`: Ano alvo para atingir a meta
+#### `@Table`
+Define o nome da tabela no banco.
 
-**Exemplo de dados:**
-```
-id | nome              | valor_meta | valor_atual | prazo
----|-------------------|------------|-------------|-------
-1  | Independência     | 1000000.00 | 150000.00   | 2030
-2  | Minha casa        | 300000.00  | 50000.00    | 2028
-3  | Reforma da casa   | 15000.00   | NULL        | 2025
+```java
+@Table(name = "ativos_completo")
 ```
 
----
+#### `@Id` e `@GeneratedValue`
+Define a chave primária e como ela é gerada.
 
-## 🐳 Docker e Containerização
-
-### O que é Docker?
-
-Docker é uma ferramenta que **empacota sua aplicação e todas as suas dependências em um container** (uma caixa isolada) que pode rodar em qualquer lugar.
-
-**Analogia:**
-- Sem Docker: Você precisa instalar Java, Maven, PostgreSQL em cada máquina
-- Com Docker: Você empacota tudo em um container e roda em qualquer lugar
-
-### Como funciona no nosso projeto
-
-```
-┌─────────────────────────────────┐
-│      docker-compose.yml         │
-│  (orquestração de containers)   │
-├─────────────────────────────────┤
-│  ┌────────────────────────────┐ │
-│  │  Container 1: PostgreSQL   │ │
-│  │  (banco de dados)          │ │
-│  │  Porta: 5432              │ │
-│  └────────────────────────────┘ │
-│                                 │
-│  ┌────────────────────────────┐ │
-│  │  Container 2: Spring Boot  │ │
-│  │  (aplicação Yuni)          │ │
-│  │  Porta: 8080               │ │
-│  └────────────────────────────┘ │
-└─────────────────────────────────┘
+```java
+@Id
+@GeneratedValue(strategy = GenerationType.IDENTITY)
+private Long id;  // PostgreSQL gera automaticamente (SERIAL)
 ```
 
-### Componentes Docker
+#### `@Column`
+Customiza a coluna no banco.
 
-**Dockerfile**
-```dockerfile
-FROM eclipse-temurin:21-jdk-alpine AS builder
-# Estágio 1: Compila o Maven
-
-FROM eclipse-temurin:21-jre-alpine
-# Estágio 2: Roda a aplicação
+```java
+@Column(name = "valor_atual", precision = 15, scale = 2)
+private BigDecimal valorAtual;  // DECIMAL(15,2) no banco
 ```
 
-**docker-compose.yml**
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: yuni_db
-      POSTGRES_USER: yuni_user
-      POSTGRES_PASSWORD: yuni_pass123
-  
-  app:
-    build: .
-    ports:
-      - "8080:8080"
+#### `@OneToOne`, `@ManyToOne`, `@OneToMany`
+Define relacionamentos entre entidades.
+
+```java
+@OneToOne
+@JoinColumn(name = "tesouro_direto_id")
+private TesouroDireto tesouroDireto;  // FK para tesouro_direto
 ```
 
-**Vantagens:**
-- ✅ Ambiente consistente (dev, teste, prod)
-- ✅ Fácil compartilhar com equipe
-- ✅ Rápido começar a desenvolver
-- ✅ Simula produção localmente
+### Lombok
 
----
+#### `@Data`
+Gera getters, setters, toString, equals, hashCode automaticamente.
 
-## 📚 Glossário
+```java
+@Data
+public class AtivosRequest {
+    private String nome;  // getLome(), setNome() gerados automaticamente
+}
+```
 
-### A
-- **API**: Application Programming Interface (interface para comunicação entre programas)
-- **ACID**: Propriedades de banco de dados (Atomicidade, Consistência, Isolamento, Durabilidade)
+#### `@Builder`
+Implementa o padrão Builder para construção de objetos.
 
-### C
-- **CORS**: Cross-Origin Resource Sharing (permite requisições de diferentes origens)
-- **Controller**: Componente que recebe requisições HTTP
+```java
+@Builder
+public class Ativos {
+    private Long id;
+    private String nome;
+}
 
-### D
-- **DTO**: Data Transfer Object (objeto para transferir dados)
-- **DDL**: Data Definition Language (criação de tabelas)
-- **Domain**: Entidades do sistema
+// Uso:
+Ativos ativo = Ativos.builder()
+    .id(1L)
+    .nome("Conta Corrente")
+    .build();
+```
 
-### E
-- **Entity**: Entidade mapeada para o banco de dados
-- **Endpoint**: URL da API
+#### `@RequiredArgsConstructor`
+Gera construtor com campos `final` ou `@NonNull`.
 
-### H
-- **HTTP**: Protocolo de comunicação web (GET, POST, PUT, DELETE)
-- **Hibernate**: Framework ORM para Java
+```java
+@Service
+@RequiredArgsConstructor
+public class AtivosService {
+    private final AtivosRepository repository;  // Injetado via construtor
+}
+```
 
-### J
-- **JPA**: Java Persistence API (padrão de ORM)
-- **JSON**: Formato de dados (JavaScript Object Notation)
+#### `@NoArgsConstructor` e `@AllArgsConstructor`
+Geram construtor sem argumentos e com todos os argumentos, respectivamente.
 
-### M
-- **Maven**: Gerenciador de dependências e build
-- **MVC**: Model-View-Controller (padrão de arquitetura)
+## 🏗️ Princípios SOLID
 
-### O
-- **ORM**: Object-Relational Mapping (mapeia objetos para banco de dados)
+### S - Single Responsibility Principle (Responsabilidade Única)
+Cada classe tem uma única responsabilidade.
 
-### P
-- **PostgreSQL**: Banco de dados relacional
-- **Port**: Porta (número para acessar um serviço)
+```java
+// ✅ BOM: Cada camada tem sua responsabilidade
+AtivosController    -> Recebe requisições HTTP
+AtivosService       -> Lógica de negócio
+AtivosRepository    -> Acesso ao banco
+```
 
-### R
-- **Repository**: Padrão para acesso a dados
-- **REST**: Representational State Transfer (arquitetura web)
-- **Response**: Resposta HTTP
+### O - Open/Closed Principle (Aberto/Fechado)
+Aberto para extensão, fechado para modificação.
 
-### S
-- **Service**: Componente com lógica de negócio
-- **SQL**: Structured Query Language (linguagem de banco de dados)
-- **Spring Boot**: Framework Java para web
+```java
+// ✅ BOM: Podemos adicionar novos tipos de investimento sem modificar código existente
+private void processarInvestimento(AtivosCompleto ativo, AtivosCompletoRequest request) {
+    switch (request.getTipoInvestimento()) {
+        case "tesouro_direto":
+            processarTesouroDireto(ativo, request.getTesouroDireto());
+            break;
+        case "renda_fixa":
+            processarRendaFixa(ativo, request.getRendaFixa());
+            break;
+        // Adicionar novo tipo aqui não modifica métodos existentes
+    }
+}
+```
 
-### T
-- **Table**: Tabela do banco de dados
+### L - Liskov Substitution Principle (Substituição de Liskov)
+Subclasses podem substituir suas superclasses.
 
----
+```java
+// JpaRepository é substituível por qualquer implementação
+JpaRepository<Ativos, Long> repository = new SimpleJpaRepository<>(...);
+```
 
-## 🚀 Próximos Passos para Aprender
+### I - Interface Segregation Principle (Segregação de Interface)
+Interfaces específicas são melhores que uma interface geral.
 
-1. **Testes Unitários**
-   - Mockar dependências
-   - Testar cada camada isoladamente
+```java
+// ✅ BOM: Repositórios específicos para cada entidade
+AtivosRepository
+TesouroDiretoRepository
+RendaFixaRepository
+```
 
-2. **Segurança**
-   - Autenticação (JWT, OAuth)
-   - Autorização (roles, permissions)
-   - HTTPS
+### D - Dependency Inversion Principle (Inversão de Dependência)
+Depender de abstrações, não de implementações concretas.
 
-3. **Performance**
-   - Cache (Redis)
-   - Índices no banco
-   - N+1 query problem
+```java
+@Service
+@RequiredArgsConstructor
+public class AtivosService {
+    // ✅ BOM: Depende da interface JpaRepository, não da implementação
+    private final AtivosRepository repository;
+}
+```
 
-4. **Documentação**
-   - Swagger/OpenAPI
-   - Javadoc
+## 🔄 Padrões de Projeto
 
-5. **Mais Endpoints**
-   - Atualizar meta (PUT)
-   - Deletar meta (DELETE)
-   - Filtrar metas
+### DTO (Data Transfer Object)
+Objetos para transferir dados entre camadas.
 
----
+```java
+// Request DTO (entrada)
+public class AtivosRequest {
+    private String nome;
+    private String tipo;
+    private BigDecimal valorAtual;
+}
 
-## 📖 Documentos Relacionados
+// Response DTO (saída)
+public class AtivosResponse {
+    private List<Ativos> ativos;
+}
+```
 
-- **[INTERFACE_E_INJECAO.md](./INTERFACE_E_INJECAO.md)** - Guia completo sobre Interface e Injeção de Dependência
-- **[API_TESTING.md](./API_TESTING.md)** - Como testar a API do Yuni
-- **[DOCKER_SETUP.md](./DOCKER_SETUP.md)** - Setup e configuração do Docker
-- **[README_DOCKER.md](./README_DOCKER.md)** - Informações sobre containerização
+### Builder Pattern
+Construção fluente de objetos complexos.
+
+```java
+Ativos ativo = Ativos.builder()
+    .nome("Conta Corrente")
+    .tipo("conta_corrente")
+    .valorAtual(new BigDecimal("5000.00"))
+    .build();
+```
+
+### Repository Pattern
+Abstração do acesso a dados.
+
+```java
+public interface AtivosRepository extends JpaRepository<Ativos, Long> {
+    List<Ativos> findAllByOrderByValorAtualDesc();
+    // Spring Data JPA implementa automaticamente
+}
+```
+
+### Dependency Injection
+Inversão de controle para injetar dependências.
+
+```java
+@RestController
+@RequiredArgsConstructor  // Lombok gera construtor
+public class AtivosController {
+    private final AtivosService service;  // Spring injeta automaticamente
+}
+```
+
+## 📦 Convenções de Nomenclatura
+
+### Camadas
+- **Controller**: `*Controller.java` - Endpoints REST
+- **Service**: `*Service.java` - Lógica de negócio
+- **Repository**: `*Repository.java` - Acesso a dados
+- **Domain**: `*.java` - Entidades JPA
+- **Request**: `*Request.java` - DTOs de entrada
+- **Response**: `*Response.java` - DTOs de saída
+
+### Métodos
+- `listar*()` - Retorna lista
+- `obter*PorId()` - Busca por ID
+- `criar*()` - Cria novo registro
+- `atualizar*()` - Atualiza registro existente
+- `deletar*()` - Remove registro
+
+### Entidades
+- Singular para classes: `Ativos`, `Metas`
+- Plural para tabelas: `ativos`, `metas`
+- Snake_case para colunas: `valor_atual`, `tipo_investimento`
+
+## 🔍 Boas Práticas Aplicadas
+
+1. **Separação de Camadas**: Controller → Service → Repository
+2. **Injeção de Dependência**: Via construtor com `@RequiredArgsConstructor`
+3. **Tratamento de Erros**: `IllegalArgumentException` para validações
+4. **Validações**: No Service Layer antes de salvar
+5. **DTOs**: Request/Response separados das entidades
+6. **Transações**: `@Transactional` para operações que modificam dados
+7. **Imutabilidade**: Uso de `final` em campos injetados
+8. **Builder Pattern**: Para construção de objetos complexos
+9. **Repository Pattern**: Abstração de acesso a dados
+10. **RESTful**: Endpoints seguem convenções REST
+
+## 📖 Referências
+
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/)
+- [Spring Data JPA](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+- [Lombok](https://projectlombok.org/features/all)
+- [SOLID Principles](https://www.baeldung.com/solid-principles)
 
 ---
 
-## 📖 Recursos Úteis
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [Spring Data JPA Guide](https://spring.io/projects/spring-data-jpa)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Docker Documentation](https://docs.docker.com/)
-- [REST API Best Practices](https://restfulapi.net/)
-
----
-
-**Criado com ❤️ para aprendizado**
-
-Última atualização: Fevereiro 2026
+Voltar para: [README](../README.md)
 

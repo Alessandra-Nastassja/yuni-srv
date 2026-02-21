@@ -1,6 +1,5 @@
 package com.nast.yuni.response;
 
-import com.nast.yuni.domain.Ativos;
 import lombok.*;
 
 import java.util.List;
@@ -11,5 +10,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AtivosResponse {
-    private List<Ativos> ativos;
+    private List<AtivoResumoResponse> ativos;
 }

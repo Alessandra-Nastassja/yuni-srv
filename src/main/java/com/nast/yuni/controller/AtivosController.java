@@ -3,11 +3,18 @@ package com.nast.yuni.controller;
 import com.nast.yuni.request.AtivosRequest;
 import com.nast.yuni.request.AtivosListRequest;
 import com.nast.yuni.response.AtivosResponse;
+import com.nast.yuni.response.AtivoCompletoResponse;
+import com.nast.yuni.response.AtivoResumoResponse;
 import com.nast.yuni.service.AtivosService;
+import com.nast.yuni.service.AtivosCompletoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ativos")
@@ -15,10 +22,18 @@ import org.springframework.web.bind.annotation.*;
 public class AtivosController {
 
     private final AtivosService service;
+    private final AtivosCompletoService ativosCompletoService;
 
     @GetMapping
     public ResponseEntity<AtivosResponse> listarAtivos(){
-        return ResponseEntity.ok(service.listarAtivos());
+        AtivosResponse response = service.listarAtivos();
+        List<AtivoResumoResponse> unidos = new ArrayList<>(response.getAtivos());
+        unidos.addAll(ativosCompletoService.listarAtivosCompleto()
+                .stream()
+                .map(AtivoResumoResponse::fromAtivoCompleto)
+                .collect(Collectors.toList()));
+        response.setAtivos(unidos);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")

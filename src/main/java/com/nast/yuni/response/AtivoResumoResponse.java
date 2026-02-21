@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,6 +20,7 @@ public class AtivoResumoResponse {
     private Double valorAtual;
     private String tipoInvestimento;
     private String risco;
+    private LocalDateTime dataCriacao;
 
     public static AtivoResumoResponse fromAtivo(Ativos ativo) {
         return AtivoResumoResponse.builder()
@@ -25,6 +28,7 @@ public class AtivoResumoResponse {
                 .nome(ativo.getNome())
                 .tipo(ativo.getTipo())
                 .valorAtual(ativo.getValorAtual())
+                .dataCriacao(ativo.getDataCriacao())
                 .build();
     }
 
@@ -36,6 +40,7 @@ public class AtivoResumoResponse {
                 .valorAtual(ativo.getValorAtual())
                 .tipoInvestimento(ativo.getTipoInvestimento())
                 .risco(ativo.getRisco())
+                .dataCriacao(ativo.getDataCriacao())
                 .build();
     }
 }

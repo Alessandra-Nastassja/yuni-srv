@@ -27,7 +27,9 @@ public class AtivosController {
     @GetMapping
     public ResponseEntity<AtivosResponse> listarAtivos(){
         AtivosResponse response = service.listarAtivos();
+
         List<AtivoResumoResponse> unidos = new ArrayList<>(response.getAtivos());
+
         unidos.addAll(ativosCompletoService.listarAtivosCompleto()
                 .stream()
                 .map(AtivoResumoResponse::fromAtivoCompleto)

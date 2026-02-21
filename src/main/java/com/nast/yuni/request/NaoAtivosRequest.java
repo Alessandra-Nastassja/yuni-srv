@@ -2,15 +2,16 @@ package com.nast.yuni.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AtivosRequest {
+public class NaoAtivosRequest {
     private String nome;
-    private String tipo;
+    private String tipo; // veiculos, imoveis, emprestimos, financiamentos, outros
     private Double valorAtual;
 }
+

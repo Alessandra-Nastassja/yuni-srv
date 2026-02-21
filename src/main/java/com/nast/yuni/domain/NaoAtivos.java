@@ -11,22 +11,23 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "ativos")
-public class Ativos {
+@Table(name = "nao_ativos")
+public class NaoAtivos {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
     private String nome;
 
     @Column(nullable = false)
-    private String tipo;
+    private String tipo; // veiculos, imoveis, emprestimos, financiamentos, fgts, outros
 
     @Column(name = "valor_atual")
     private Double valorAtual;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "data_compra", nullable = false, updatable = false)
     @lombok.Builder.Default
-    private java.time.LocalDateTime dataCriacao = java.time.LocalDateTime.now();
+    private java.time.LocalDateTime dataCompra = java.time.LocalDateTime.now();
 }
+

@@ -16,7 +16,10 @@ public class MetasService {
     private final MetasRepository metasRepository;
 
     public MetasResponse listarMetas(){
-        List<Metas> metas = metasRepository.findAllByOrderByPrazoAsc();
+        List<Metas> metas = metasRepository.findAll();
+
+        // Ordenar por percentual de alcance (menor para maior)
+        metas.sort((m1, m2) -> Double.compare(m1.getPercentualAlcance(), m2.getPercentualAlcance()));
 
         return MetasResponse.builder()
                 .metas(metas)
@@ -72,5 +75,3 @@ public class MetasService {
         metasRepository.deleteById(id);
     }
 }
-
-

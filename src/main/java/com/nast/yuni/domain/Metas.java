@@ -35,4 +35,14 @@ public class Metas {
         this.valorAtual = valorAtual;
         this.prazo = prazo;
     }
+
+    public Double getPercentualAlcance() {
+        if (valorMeta == null || valorMeta == 0) {
+            return 0.0;
+        }
+        if (valorAtual == null) {
+            return 0.0;
+        }
+        return (valorAtual / valorMeta) * 100;
+    }
 }
